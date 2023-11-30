@@ -1,6 +1,7 @@
 # LibriSpeech Sound Source Localization Dataset
 
-<center><img src="./assets/librispeech-ssl-dataset.jpg" width="50%" /></center>
+<div style="text-align:center"><img src="./assets/librispeech-ssl-dataset.jpg" width="50%" /></div>
+
 
 This project aims to create simulated source sound localization dataset in customizable indoor room with random speaker position and speaker from LibriSpeech.
 This project is also about sound source localization using various Direction of Arrival (DOA) algorithms. 
