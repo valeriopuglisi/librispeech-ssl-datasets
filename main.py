@@ -1,18 +1,13 @@
 # %%
 from torchaudio.datasets import LIBRISPEECH
 import torchaudio
-from IPython.display import Audio, display
 import pyroomacoustics as pra
 import numpy as np
-from typing import Tuple
-from torch import Tensor
 import torch
-import random
 from tqdm import tqdm
-from librosa.effects import split
 import cfg
 from data import remove_silence, LibriSpeechLocationsDataset, RoomSimulator, cartesian_to_polar
-from pyroomacoustics.doa import spher2cart, circ_dist
+from pyroomacoustics.doa import circ_dist
 
 
 # %%
@@ -83,12 +78,13 @@ print('Total data set size after removing silence: ' + str(len(dataset)))
 #         pbar.update(pbar_update)
 
 # %%
-# Explain shortly What is RoomSimulator: 
+# create room simulator
 room_simulator = RoomSimulator()
 
 
 
 # %%
+# create dataloader
 dataset_loader = torch.utils.data.DataLoader(
     dataset,
     batch_size=cfg.batch_size,
@@ -122,14 +118,14 @@ with tqdm(total=len(dataset_loader)) as pbar:
         
         spatial_resp = dict()
 
-        # Conversione alle coordinate polari
+        # conversion from cartesian to polar coordinates
         r, theta, phi = cartesian_to_polar(source_locs[0] - (cfg.dx/2), source_locs[1] - (cfg.dy/2), source_locs[2]-(cfg.dz/2))
         print(f"theta:{theta}")
 
         azimuth = [theta]
 
 
-        # loop through algos
+        # loop through algos and localize
         for algo_name in cfg.algo_names:
             # Construct the new DOA object
             # the max_four parameter is necessary for FRIDA only
@@ -148,24 +144,70 @@ with tqdm(total=len(dataset_loader)) as pbar:
             min_val = spatial_resp[algo_name].min()
             max_val = spatial_resp[algo_name].max()
             spatial_resp[algo_name] = (spatial_resp[algo_name] - min_val) / (max_val - min_val)
-            print(algo_name)
             recovered_azimuth = doa.azimuth_recon / np.pi * 180.0
             real_azimuth = theta / np.pi * 180.0
             error_azimuth = circ_dist(theta, doa.azimuth_recon) / np.pi * 180.0
-            print("  Recovered azimuth:",  "degrees")
+
+
+            print(algo_name)
+            
+            print("  Recovered azimuth:", recovered_azimuth ,"degrees")
             print("  Real azimuth:", real_azimuth, "degrees")
             print("  Error:", error_azimuth, "degrees")
-
+            print(f" type(error_azimuth): {type(error_azimuth.numpy())}")
             #algo_names = ['SRP', 'MUSIC', 'TOPS','NormMUSIC', 'WAVES']
             if algo_name == "SRP":
-                srp_azimuth_errors.append(error_azimuth)  
+                srp_azimuth_errors.append(error_azimuth.numpy())  
             elif algo_name == "MUSIC":
-                music_azimuth_errors.append(error_azimuth)
+                music_azimuth_errors.append(error_azimuth.numpy())
             elif algo_name == "TOPS":
-                tops_azimuth_errors.append(error_azimuth)  
+                tops_azimuth_errors.append(error_azimuth.numpy())  
             elif algo_name == "NormMUSIC":
-                norm_music_azimuth_errors.append(error_azimuth)
+                norm_music_azimuth_errors.append(error_azimuth.numpy())
             elif algo_name == "WAVES":  
-                waves_azimuth_errors.append(error_azimuth)  
+                waves_azimuth_errors.append(error_azimuth.numpy())  
+            
+        
+        
+        break
         pbar.update(pbar_update)
+
+print(f"----type(srp_azimuth_errors): {type(srp_azimuth_errors)}")
+
+# check len of each array
+print(f"len(srp_azimuth_errors): {len(srp_azimuth_errors)}")
+print(f"len(music_azimuth_errors): {len(music_azimuth_errors)}")
+print(f"len(tops_azimuth_errors): {len(tops_azimuth_errors)}")
+print(f"len(norm_music_azimuth_errors): {len(norm_music_azimuth_errors)}")
+print(f"len(waves_azimuth_errors): {len(waves_azimuth_errors)}")
+
+
+# convert to numpy arrays 
+srp_azimuth_errors = np.array(srp_azimuth_errors)
+music_azimuth_errors = np.array(music_azimuth_errors)
+tops_azimuth_errors = np.array(tops_azimuth_errors)
+norm_music_azimuth_errors = np.array(norm_music_azimuth_errors)
+waves_azimuth_errors = np.array(waves_azimuth_errors)
+
+# calutate mean error for each algorithm
+srp_mean_error = np.mean(srp_azimuth_errors)
+music_mean_error = np.mean(music_azimuth_errors)
+tops_mean_error = np.mean(tops_azimuth_errors)
+norm_music_mean_error = np.mean(norm_music_azimuth_errors)
+waves_mean_error = np.mean(waves_azimuth_errors)
+
+# write mean arrays into a pandas dataframe
+import pandas as pd
+df = pd.DataFrame({'SRP_mean_error': srp_mean_error, 
+                   'MUSIC_mean_error': music_mean_error, 
+                   'TOPS_mean_error': tops_mean_error, 
+                   'NormMUSIC_mean_error': norm_music_mean_error, 
+                   'WAVES_mean_error': waves_mean_error}, index=[0])
+
+# create a plot from this dataframe and save it
+import matplotlib.pyplot as plt
+df.plot.box()
+plt.savefig('boxplot.png')
+
+
 
