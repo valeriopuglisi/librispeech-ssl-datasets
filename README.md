@@ -1,7 +1,16 @@
 # librispeech-ssl-datasets
 **Sound Source Localization**
-This project is about sound source localization using various Direction of Arrival (DOA) algorithms. 
-The main script is main.py.
+This project aims to create simulated source sound localization dataset in customizable indoor room with random speaker position and speaker from LibriSpeech.
+This project is also about sound source localization using various Direction of Arrival (DOA) algorithms. 
+<center>
+  <img src="./assets/librispeech.png" width="100%" />
+  + 
+  <img src="./assets/pyroomacoustics.png" width="100%" /> 
+</center>
+
+Thanks to [PyRoomsAcoustics](https://github.com/LCAV/pyroomacoustics)
+, [PyTorch](https://github.com/pytorch/pytorch) to manage [LibriSpeech](https://www.openslr.org/12) of [OpenSLR](https://www.openslr.org/index.html) and [NGCC-PHAT repo](https://github.com/axeber01/ngcc) for inspiration to solve audio acquisition dataset in this way.
+
 
 ## Libraries Used
 - **numpy:** Used for numerical computations.
@@ -60,4 +69,4 @@ This class is designed to simulate the signal propagation from a source to micro
 
 4. The pad_sequence method makes all tensors in a batch the same length by zero-padding.
 
-5. Finally, the __call__ method is called when the object is "called" as a function. This method takes a batch of data, removes silence from each waveform, creates a simulation for each waveform, and then aggregates the simulated tensors into a batch. It returns the batch tensors, source positions, and microphone positions.
+5. The __call__ method is called when the object is "called" as a function. This method takes a batch of data, removes silence from each waveform, creates a simulation for each waveform, and then aggregates the simulated tensors into a batch. It returns the batch tensors, source positions, and microphone positions.
