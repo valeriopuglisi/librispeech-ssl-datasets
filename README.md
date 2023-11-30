@@ -2,12 +2,9 @@
 **Sound Source Localization**
 This project aims to create simulated source sound localization dataset in customizable indoor room with random speaker position and speaker from LibriSpeech.
 This project is also about sound source localization using various Direction of Arrival (DOA) algorithms. 
-<center>
-  <img src="./assets/librispeech.png" width="100%" />
-  + 
-  <img src="./assets/pyroomacoustics.png" width="100%" /> 
-</center>
-
+<center><img src="./assets/librispeech.png" width="100%" /></center>
+<center> + </center>                      
+<center><img src="./assets/pyroomacoustics.png" width="100%"/></center>   
 Thanks to [PyRoomsAcoustics](https://github.com/LCAV/pyroomacoustics)
 , [PyTorch](https://github.com/pytorch/pytorch) to manage [LibriSpeech](https://www.openslr.org/12) of [OpenSLR](https://www.openslr.org/index.html) and [NGCC-PHAT repo](https://github.com/axeber01/ngcc) for inspiration to solve audio acquisition dataset in this way.
 
