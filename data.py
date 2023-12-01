@@ -1,13 +1,10 @@
 from matplotlib import pyplot as plt
 from torchaudio.datasets import LIBRISPEECH
-import torchaudio
 import pyroomacoustics as pra
 import numpy as np
 from typing import Tuple
 from torch import Tensor
 import torch
-import random
-from tqdm import tqdm
 from librosa.effects import split
 
 import cfg
@@ -80,6 +77,12 @@ class RoomSimulator(object):
         self.binaural_mic_dir = cfg.binaural_mic_dir
         self.triaural_mic_locs = cfg.triaural_mic_locs
         self.triaural_mic_dir = cfg.triaural_mic_dir
+        self.tetraural_mic_locs = cfg.tetraural_mic_locs
+        self.tetraural_mic_dir = cfg.tetraural_mic_dir
+        self.square_mic_locs = cfg.square_mic_locs
+        self.square_mic_dir = cfg.square_mic_dir
+        self.circular_mic_locs = cfg.circular_mic_locs
+        self.circular_mic_array = cfg.circular_mic_array
         
 
 
@@ -112,10 +115,16 @@ class RoomSimulator(object):
         elif self.mic_config == 'triaural':
             room.add_microphone_array(self.triaural_mic_locs, directivity=self.triaural_mic_dir)
             self.mic_locs = self.triaural_mic_locs
-
-            cfg.c = room.c
-
-
+        elif self.mic_config == 'tetraural':
+            room.add_microphone_array(self.tetraural_mic_locs, directivity=self.tetraural_mic_dir)
+            self.mic_locs = self.tetraural_mic_locs
+        elif self.mic_config == 'square':
+            room.add_microphone_array(self.square_mic_locs, directivity=self.square_mic_dir)
+            self.mic_locs = self.square_mic_locs
+        elif self.mic_config == 'circular':
+            room.add_microphone_array(self.circular_mic_array)
+            self.mic_locs = self.circular_mic_locs
+        cfg.c = room.c
         source_locations=[]
         # 2 Add source to room
         for i, signal in enumerate(signals):
@@ -154,7 +163,10 @@ class RoomSimulator(object):
                     #     start_idx = self.lower_bound
                     #     end_idx = start_idx + self.N
                     #     simulated_signals = simulated_signals[start_idx:end_idx]                    
-            
+                    # convert simulated_signals to np array
+                    simulated_signals = np.array(simulated_signals)
+                    # convert source_locs to np array
+                    source_locs = np.array(source_locs)
                     # Group the list of tensors into a batched tensor
                     tensors1 += [torch.as_tensor(simulated_signals, dtype=torch.float)]
                     targets += [torch.as_tensor(source_locs, dtype=torch.float)]

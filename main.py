@@ -11,6 +11,8 @@ from pyroomacoustics.doa import circ_dist
 
 
 # %%
+print(f"room dimensions: {cfg.room_dim}")
+print(f"microphone configuration: {cfg.mic_config}")
 # create datasets
 print(f"len(source_locs_train): {len(cfg.source_locs)}")
 dataset = LibriSpeechLocationsDataset(cfg.source_locs, split="test-clean")
@@ -32,18 +34,17 @@ print("Removing silence and keeping only waveforms longer than MIN_SIG_LEN secon
 valid_idx = [i if len(remove_silence(waveform, frame_length=cfg.sig_len)) > cfg.fs * cfg.MIN_SIG_LEN else None for i, ((waveform, sample_rate,transcript, speaker_id, utterance_number), pos, seed) in enumerate(dataset)]
 inds = [i for i in valid_idx if i is not None]
 print("Silence removed")
-
 # %%
 # print(f"len(valid_idx): {len(valid_idx)} -  valid_idx: {valid_idx}")
 # print(f"len(inds): {len(inds)} - valid inds: {inds}")
 
 # %%
-
 dataset = torch.utils.data.dataset.Subset(dataset, inds)
 print('Total data set size after removing silence: ' + str(len(dataset)))
-
-
 # %%
+
+
+
 # (waveform, sample_rate, transcript, speaker_id, utterance_number), pos, seed = dataset[0]
 # transform = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=cfg.fs)
 # transformed = transform(waveform)
@@ -81,14 +82,12 @@ print('Total data set size after removing silence: ' + str(len(dataset)))
 # create room simulator
 room_simulator = RoomSimulator()
 
-
-
 # %%
 # create dataloader
 dataset_loader = torch.utils.data.DataLoader(
     dataset,
     batch_size=cfg.batch_size,
-    shuffle=True,
+    shuffle=False,
     collate_fn=room_simulator,
 )
 
@@ -112,7 +111,6 @@ with tqdm(total=len(dataset_loader)) as pbar:
 
         # Convert to frequency domain
         X = pra.transform.stft.analysis(microphone_signals, cfg.nfft, cfg.nfft // 2)
-        print(f"X.shape: {X.shape}")
         X = X.transpose([2, 1, 0])
 
         
@@ -120,8 +118,6 @@ with tqdm(total=len(dataset_loader)) as pbar:
 
         # conversion from cartesian to polar coordinates
         r, theta, phi = cartesian_to_polar(source_locs[0] - (cfg.dx/2), source_locs[1] - (cfg.dy/2), source_locs[2]-(cfg.dz/2))
-        print(f"theta:{theta}")
-
         azimuth = [theta]
 
 
@@ -147,14 +143,12 @@ with tqdm(total=len(dataset_loader)) as pbar:
             recovered_azimuth = doa.azimuth_recon / np.pi * 180.0
             real_azimuth = theta / np.pi * 180.0
             error_azimuth = circ_dist(theta, doa.azimuth_recon) / np.pi * 180.0
+            # print(algo_name)
+            # print("  Recovered azimuth:", recovered_azimuth ,"degrees")
+            # print("  Real azimuth:", real_azimuth, "degrees")
+            # print("  Error:", error_azimuth, "degrees")
+            # print(f" type(error_azimuth): {type(error_azimuth.numpy())}")
 
-
-            print(algo_name)
-            
-            print("  Recovered azimuth:", recovered_azimuth ,"degrees")
-            print("  Real azimuth:", real_azimuth, "degrees")
-            print("  Error:", error_azimuth, "degrees")
-            print(f" type(error_azimuth): {type(error_azimuth.numpy())}")
             #algo_names = ['SRP', 'MUSIC', 'TOPS','NormMUSIC', 'WAVES']
             if algo_name == "SRP":
                 srp_azimuth_errors.append(error_azimuth.numpy())  
@@ -167,19 +161,9 @@ with tqdm(total=len(dataset_loader)) as pbar:
             elif algo_name == "WAVES":  
                 waves_azimuth_errors.append(error_azimuth.numpy())  
             
-        
-        
-        break
         pbar.update(pbar_update)
 
 print(f"----type(srp_azimuth_errors): {type(srp_azimuth_errors)}")
-
-# check len of each array
-print(f"len(srp_azimuth_errors): {len(srp_azimuth_errors)}")
-print(f"len(music_azimuth_errors): {len(music_azimuth_errors)}")
-print(f"len(tops_azimuth_errors): {len(tops_azimuth_errors)}")
-print(f"len(norm_music_azimuth_errors): {len(norm_music_azimuth_errors)}")
-print(f"len(waves_azimuth_errors): {len(waves_azimuth_errors)}")
 
 
 # convert to numpy arrays 
@@ -204,10 +188,16 @@ df = pd.DataFrame({'SRP_mean_error': srp_mean_error,
                    'NormMUSIC_mean_error': norm_music_mean_error, 
                    'WAVES_mean_error': waves_mean_error}, index=[0])
 
-# create a plot from this dataframe and save it
+# save datafreame into a csv file inserting the microphone configuration in the name
+df.to_csv('./'+str(cfg.mic_config)+'_localization_mean_error.csv')
+
+# create a plot from this dataframe setting vertical orientation of x label, range from 0 to 360 for y and save it
 import matplotlib.pyplot as plt
-df.plot.box()
-plt.savefig('boxplot.png')
+ax = df.plot.bar(rot=0, ylim=(0, 360))
+ax.set_ylabel('Mean error (degrees)')
+ax.set_xlabel('Algorithms')
+ax.set_title('Mean error for each localization algorithm in '+str(cfg.mic_config)+' configuration')
+plt.savefig('./'+str(cfg.mic_config)+'_localization_mean_error.png')
 
 
 
