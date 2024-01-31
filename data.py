@@ -6,7 +6,7 @@ from typing import Tuple
 from torch import Tensor
 import torch
 from librosa.effects import split
-
+import soundfile as sf
 import cfg
 
 def remove_silence(signal, top_db=20, frame_length=2048, hop_length=512):
@@ -83,8 +83,6 @@ class RoomSimulator(object):
         self.square_mic_dir = cfg.square_mic_dir
         self.circular_mic_locs = cfg.circular_mic_locs
         self.circular_mic_array = cfg.circular_mic_array
-        
-
 
     def remove_silence(self, signal, top_db=20, frame_length=2048, hop_length=512):
         '''
@@ -124,18 +122,21 @@ class RoomSimulator(object):
         elif self.mic_config == 'circular':
             room.add_microphone_array(self.circular_mic_array)
             self.mic_locs = self.circular_mic_locs
+        
+        # Add speed of sound to room
         cfg.c = room.c
-        source_locations=[]
         # 2 Add source to room
         for i, signal in enumerate(signals):
             source_loc = source_locs[i]
-            source_locations.append(source_loc)
             room.add_source(source_loc, signal=signal)
 
         # 3 Simulate room
         room.simulate(snr=self.snr)
-
-        return room.mic_array.signals.T, source_locations, self.mic_locs
+        simulated_signals = room.mic_array.signals.T
+        # save this audio file
+        # sf.write(f"./simulated_signals_{i}.wav", simulated_signals, self.fs)
+        
+        return simulated_signals, source_locs, self.mic_locs
 
 
     def pad_sequence(self, batch):
@@ -149,27 +150,29 @@ class RoomSimulator(object):
             # A data tuple has the form:
             # waveform, sample_rate, label, speaker_id, utterance_number
             tensors1 = []
-            targets = []
+            targets = [] 
+            signals = []
+            source_locs = []
+            speaker_ids = []
+            labels = []
             # Gather in lists, and encode labels as indices
             with torch.no_grad():
                 for (waveform, sample_rate, label, speaker_id, utterace_number), source_loc, seed in batch:
-
                     waveform = waveform.squeeze()
                     signal = self.remove_silence(waveform, frame_length=self.N)
-                    simulated_signals, source_locs, mic_locs = self.create_simulation(source_locs=[source_loc],signals=[signal])
-                    # if self.train:
-                    #     start_idx = torch.randint(self.lower_bound, self.upper_bound - self.N - 1, (1,))
-                    # else:
-                    #     start_idx = self.lower_bound
-                    #     end_idx = start_idx + self.N
-                    #     simulated_signals = simulated_signals[start_idx:end_idx]                    
-                    # convert simulated_signals to np array
-                    simulated_signals = np.array(simulated_signals)
-                    # convert source_locs to np array
-                    source_locs = np.array(source_locs)
-                    # Group the list of tensors into a batched tensor
-                    tensors1 += [torch.as_tensor(simulated_signals, dtype=torch.float)]
-                    targets += [torch.as_tensor(source_locs, dtype=torch.float)]
+                    signals.append(signal)
+                    source_locs.append(source_loc)
+                    speaker_ids.append(speaker_id)
+                    labels.append(label)
+
+            simulated_signals, source_locs, mic_locs = self.create_simulation(source_locs=source_locs,signals=signals)                  
+            # convert simulated_signals to np array
+            simulated_signals = np.array(simulated_signals)
+            # convert source_locs to np array
+            source_locs = np.array(source_locs)
+            # Group the list of tensors into a batched tensor
+            tensors1 += [torch.as_tensor(simulated_signals, dtype=torch.float)]
+            targets = torch.as_tensor(source_locs, dtype=torch.float)
 
             # Group the list of tensors into a batched tensor
             tensors1 = self.pad_sequence(tensors1).unsqueeze(1)

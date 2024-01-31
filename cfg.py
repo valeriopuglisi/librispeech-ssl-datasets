@@ -5,11 +5,24 @@ from pyroomacoustics.directivities import (
     DirectionVector,
     CardioidFamily,
 )
-DATA_LEN = 100 #2620 # number of data points
+
+# DOA Parameters
+# algo_names = ['SRP', 'MUSIC', 'FRIDA', 'TOPS']
+algo_names = ['SRP', 'MUSIC','NormMUSIC', 'TOPS', 'WAVES', 'FRIDA']
+nfft = 256  # FFT size
+freq_range = [300, 16000] # frequency range for DOA estimation
+
+
+MAX_DATA_LEN = 2620  # number of data points in Librispeeh test-clean
+N_SPEAKER = 1 # number of speakers
+N_RECORDS = MAX_DATA_LEN # number of recordings
+# Assegnazione ternaria di DATA_LEN
+DATA_LEN = N_SPEAKER * N_RECORDS if N_SPEAKER * N_RECORDS < MAX_DATA_LEN else MAX_DATA_LEN
+
 MIN_SIG_LEN = 2  # only use snippets longer than 2 seconds
 fs = 16000  # sampling rate
 sig_len = 2048  # length of snippet used for tdoa estimation
-batch_size = 1 # Batch size for DataLoader
+batch_size = N_SPEAKER # Batch size for DataLoader
 speaker_index = [61, 121, 237, 260] # [] to select all speakers 
 
 
@@ -27,15 +40,17 @@ xyz_max = room_dim
 
 # room properties
 t60 = 0.6 # seconds
-snr = 5 # dB
+snr = 10 # dB
 c = 343  # speed of sound in m/s
 
-# room dimensions in meters
+
+
+# source lacation points random generated in meters
 source_locs = np.random.uniform(low=xyz_min, high=xyz_max, size=(DATA_LEN, 3))
 
 
 # microphone congifuration
-mic_config = 'square' # 'binaural', 'triaural', 'tetraural', 'square', 'circular'
+mic_config = 'binaural' # 'binaural', 'triaural', 'tetraural', 'square', 'circular'
 
 # Microphones configurations (microphone locations in meters)
 # ------ binarual
@@ -70,7 +85,7 @@ square_mic_dir = [
     ]
 # -------- circular
 circular_mic_rotation = 0
-circular_mic_center = np.array([1.5,1.15,1.25])
+circular_mic_center = np.array(room_dim) / 2
 circular_mic_colatitude = 90
 circular_mic_num_mic = 8
 circular_mic_pattern = DirectivityPattern.CARDIOID
@@ -84,13 +99,5 @@ circular_mic_array = pra.beamforming.circular_microphone_array_xyplane(
     fs=fs,
     directivity=circular_mic_directivity,
 )
-circular_mic_locs = circular_mic_array.R.T
+circular_mic_locs = circular_mic_array.R
 
-# DOA Parameters
- # algo_names = ['SRP', 'MUSIC', 'FRIDA', 'TOPS']
-algo_names = ['SRP', 'MUSIC','NormMUSIC', 'TOPS', 'WAVES']
-nfft = 256  # FFT size
-freq_range = [300, 16000] # frequency range for DOA estimation
-
-
-    
