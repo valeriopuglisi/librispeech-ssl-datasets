@@ -6,15 +6,17 @@ from pyroomacoustics.directivities import (
     CardioidFamily,
 )
 
+
+## ---------- ALGORYTHMS PARAMETERS -----------------------------------
 # DOA Parameters
-# algo_names = ['SRP', 'MUSIC', 'FRIDA', 'TOPS']
-algo_names = ['SRP', 'MUSIC','NormMUSIC', 'TOPS', 'WAVES', 'FRIDA']
+algo_names = ['SRP', 'MUSIC','NormMUSIC', 'TOPS', 'WAVES']#, 'FRIDA']
 nfft = 256  # FFT size
 freq_range = [300, 16000] # frequency range for DOA estimation
 
 
+## ---------- DATASET PARAMETERS -----------------------------------
 MAX_DATA_LEN = 2620  # number of data points in Librispeeh test-clean
-N_SPEAKER = 1 # number of speakers
+N_SPEAKER = 2 # number of speakers
 N_RECORDS = MAX_DATA_LEN # number of recordings
 # Assegnazione ternaria di DATA_LEN
 DATA_LEN = N_SPEAKER * N_RECORDS if N_SPEAKER * N_RECORDS < MAX_DATA_LEN else MAX_DATA_LEN
@@ -30,6 +32,8 @@ speaker_index = [61, 121, 237, 260] # [] to select all speakers
 lower_bound = 0
 upper_bound = fs * MIN_SIG_LEN
 
+
+## ---------- ROOM PARAMETERS -----------------------------------
 # room dimensions in meters
 dx = 3.0
 dy = 2.5
@@ -44,13 +48,12 @@ snr = 10 # dB
 c = 343  # speed of sound in m/s
 
 
-
 # source lacation points random generated in meters
 source_locs = np.random.uniform(low=xyz_min, high=xyz_max, size=(DATA_LEN, 3))
 
 
 # microphone congifuration
-mic_config = 'binaural' # 'binaural', 'triaural', 'tetraural', 'square', 'circular'
+mic_config = 'tetraural' # 'binaural', 'triaural', 'tetraural', 'square', 'circular'
 
 # Microphones configurations (microphone locations in meters)
 # ------ binarual

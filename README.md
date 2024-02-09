@@ -31,7 +31,7 @@ python main.py
 # Code Overview
 ## Configuration of Dataset based on Environment Settings [cfg.py](./cfg.py)
 - The selected code is a configuration file (cfg.py) for a room simulation. It sets up various parameters for the simulation.
-
+    - **N_SPEAKER** define the number of speaker that is taken for every sample of Sound Source Localization Dataset. 
     - **dx, dy, dz** define the dimensions of the room in meters.
     - **room_dim** is a list that contains the dimensions of the room.
     - **xyz_min** and **xyz_max** define the minimum and maximum coordinates for the room.
@@ -40,8 +40,8 @@ python main.py
     - **c** is the speed of sound in meters per second.
     - **source_locs** is an array of random source locations within the room.
     - **mic_config** is a string that defines the microphone configuration. It can be 'binaural', 'triaural', 'tetraural', 'square', or 'circular'.
-    -binaural_mic_locs, triaural_mic_locs, and tetraural_mic_locs are arrays that define the locations of the microphones in each configuration.
-    - binaural_mic_dir, triaural_mic_dir are lists that define the direction of the microphones in binaural and triaural configurations respectively. They use the CardioidFamily class to define the directivity pattern and orientation of the microphones.
+        - **binaural_mic_locs**, triaural_mic_locs, and tetraural_mic_locs are arrays that define the locations of the microphones in each configuration.
+        - **binaural_mic_dir**, triaural_mic_dir are lists that define the direction of the microphones in binaural and triaural configurations respectively. They use the CardioidFamily class to define the directivity pattern and orientation of the microphones.
 
 - The selected code is part of a configuration file (cfg.py) and it sets up parameters for Direction of Arrival (DOA) algorithms.
 
@@ -55,19 +55,19 @@ The file data.py contains two main classes: LibriSpeechLocationsDataset and Room
 ## LibriSpeechLocationsDataset class
 It extends the LIBRISPEECH class and has two main methods:
 
-1. __init__(self, source_locs, split): This is the class constructor. It takes source positions and dataset split type as arguments. It initializes the object and sets self.source_locs to the provided source positions.
+1. **__init__(self, source_locs, split)**: This is the class constructor. It takes source positions and dataset split type as arguments. It initializes the object and sets self.source_locs to the provided source positions.
 
-2. __getitem__(self, n: int): This method allows accessing the object's elements as if it were an array. It takes an index n and returns a tuple with the waveform, sample rate, transcript, speaker ID, utterance number, source position, and a seed.
+2. **__getitem__(self, n: int)**: This method allows accessing the object's elements as if it were an array. It takes an index n and returns a tuple with the waveform, sample rate, transcript, speaker ID, utterance number, source position, and a seed.
 
 ## RoomSimulator Class
 This class is designed to simulate the signal propagation from a source to microphone positions, given a batch of LibrispeechLocation samples.
 
-1. The __init__ method is the class constructor. This method is called when an instance of the class is created. It initializes the object with a set of configuration parameters defined in cfg. These include signal length, frequency bounds, sampling frequency, room dimensions, reverberation time, microphone configuration, signal-to-noise ratio, and microphone positions and directions.
+1. The **__init__** method is the class constructor. This method is called when an instance of the class is created. It initializes the object with a set of configuration parameters defined in cfg. These include signal length, frequency bounds, sampling frequency, room dimensions, reverberation time, microphone configuration, signal-to-noise ratio, and microphone positions and directions.
 
-2. The remove_silence method removes silent parts from the input signal. This is done by segmenting the signal into clips, removing clips below a certain decibel threshold (defined by top_db), and then concatenating the remaining clips.
+2. The **remove_silence** method removes silent parts from the input signal. This is done by segmenting the signal into clips, removing clips below a certain decibel threshold (defined by top_db), and then concatenating the remaining clips.
 
-3. The create_simulation method creates a binaural simulation using the pyroomacoustics library. This method creates a room, adds an array of microphones to the room, adds a source to the room for each signal in signals, and then simulates the room.
+3. The **create_simulation** method creates a binaural simulation using the pyroomacoustics library. This method creates a room, adds an array of microphones to the room, adds a source to the room for each signal in signals, and then simulates the room.
 
-4. The pad_sequence method makes all tensors in a batch the same length by zero-padding.
+4. The **pad_sequence** method makes all tensors in a batch the same length by zero-padding.
 
-5. The __call__ method is called when the object is "called" as a function. This method takes a batch of data, removes silence from each waveform, creates a simulation for each waveform, and then aggregates the simulated tensors into a batch. It returns the batch tensors, source positions, and microphone positions.
+5. The **__call__** method is called when the object is "called" as a function. This method takes a batch of data, removes silence from each waveform, creates a simulation for each waveform, and then aggregates the simulated tensors into a batch. It returns the batch tensors, source positions, and microphone positions.
